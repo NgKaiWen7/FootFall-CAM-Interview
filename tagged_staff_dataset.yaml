@@ -1,4 +1,0 @@
-train: tagged_staff_dataset/images
-val: tagged_staff_dataset/images
-nc: 1
-names: ['staff']

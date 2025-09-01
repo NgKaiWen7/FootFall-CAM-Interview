@@ -1,7 +1,7 @@
-task: classify
+task: detect
 mode: train
-model: yolo11n-cls.pt
-data: human_crops_dataset_split
+model: yolo11n.pt
+data: human_seg.yaml
 epochs: 200
 time: null
 patience: 100

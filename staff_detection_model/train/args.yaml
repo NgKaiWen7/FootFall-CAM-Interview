@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: yolo11n.pt
-data: tagged_staff_dataset.yaml
+data: staff_id.yaml
 epochs: 200
 time: null
 patience: 100

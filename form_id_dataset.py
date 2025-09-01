@@ -3,8 +3,9 @@ import shutil
 import os
 import sys
 
-if len(sys.argv) == 2:
+if len(sys.argv) == 3:
     image_source = sys.argv[1]
+    class_name = sys.argv[2]
 else:
     raise ValueError("Image source must be provided")
 
@@ -12,30 +13,41 @@ output_dir = f"{image_source}_dataset_split"
 image_source_dir = f"{image_source}_dataset"
 train_ratio = 0.8
 
-splits = ["train", "val"]
-classes = ["id", "no_id"]
-
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
 
 
-# make output folders
-for split in splits:
-    for cls in classes:
-        os.makedirs(os.path.join(output_dir, split, cls), exist_ok=True)
+images = [f for f in os.listdir(f"{image_source_dir}/images") if f.endswith(".jpg")]
+random.shuffle(images)
 
-for cls in classes:
-    cls_path = os.path.join(image_source_dir, cls)
-    files = os.listdir(cls_path)
-    random.shuffle(files)
+n = len(images)
+n_train = int(0.8 * n)
+n_val = int(0.2 * n)
 
-    split_idx = int(len(files) * train_ratio)
-    train_files = files[:split_idx]
-    val_files = files[split_idx:]
+split_files = {
+    "train": images[:n_train],
+    "val": images[n_train : n_train + n_val],
+}
 
-    for f in train_files:
+image_dir = f"{image_source_dir}/images"
+label_dir = f"{image_source_dir}/labels"
+for split in ["train", "val"]:
+    os.makedirs(f"{output_dir}/images/{split}", exist_ok=True)
+    os.makedirs(f"{output_dir}/labels/{split}", exist_ok=True)
+
+    for img_file in split_files[split]:
+        base = os.path.splitext(img_file)[0]
+        label_file = f"{base}.txt"
+
         shutil.copy(
-            os.path.join(cls_path, f), os.path.join(output_dir, "train", cls, f)
+            f"{image_dir}/{img_file}", f"{output_dir}/images/{split}/{img_file}"
         )
-    for f in val_files:
-        shutil.copy(os.path.join(cls_path, f), os.path.join(output_dir, "val", cls, f))
+        shutil.copy(
+            f"{label_dir}/{label_file}", f"{output_dir}/labels/{split}/{label_file}"
+        )
+with open(f"{image_source}.yaml", "w") as f:
+    f.write(f"train: {output_dir}/images/train\n")
+    f.write(f"val: {output_dir}/images/val\n")
+    f.write(f'nc: 1\nnames: ["{class_name}"]\n')
+
+exit()

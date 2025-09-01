@@ -93,7 +93,6 @@ while True:
             2,
         )
 
-        # just for visualization, can be removed
         if item.lower() == "id" and probs > 0.99:
             cv2.imwrite(
                 f"detected_frames/frame_{detected_frame_idx}.jpg", display_frame

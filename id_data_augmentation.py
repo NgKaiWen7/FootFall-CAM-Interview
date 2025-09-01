@@ -31,7 +31,7 @@ def rotate(fg, angle):
 
 
 # load PNG tag with alpha channel
-tag = cv2.imread("edited_staff_id.png", cv2.IMREAD_UNCHANGED)  # shape: (h, w, 4)
+tag = cv2.imread("edited_staff_id.png", cv2.IMREAD_UNCHANGED)
 
 ## Commented out, this is for cropping out transparent edges
 # alpha = tag[:, :, 3]
@@ -43,30 +43,37 @@ tag = cv2.imread("edited_staff_id.png", cv2.IMREAD_UNCHANGED)  # shape: (h, w, 4
 if len(sys.argv) == 2:
     image_source = sys.argv[1]
 else:
-    raise ValueError("Image source must be provided")
+    raise ValueError("Insufficient arguments provided")
 
 frames = glob.glob(f"{image_source}/*.jpg")
 
 image_output_dir = f"{image_source}_dataset"
 if os.path.exists(image_output_dir):
     shutil.rmtree(image_output_dir)
-
-for folder in ["id", "no_id"]:
+for folder in ["images", "labels"]:
     os.makedirs(os.path.join(image_output_dir, folder), exist_ok=True)
 
 
-for i in range(1000):
-    bg_path = random.choice(frames)
-    # bg_path = frames[i]
+for y in range(1200):
+    image_num = np.random.randint(0, len(frames))
+    # bg_path = random.choice(frames)
+
+    bg_path = frames[image_num]
     bg = cv2.imread(bg_path)
+    bg = cv2.imread(f"{image_source}/{image_num}.jpg")
 
     # Random resize on bg
-    x_scale = random.uniform(0.9, 1.1)
-    y_scale = random.uniform(0.9, 1.1)
-    bg = cv2.resize(bg, (0, 0), fx=x_scale, fy=y_scale)
+    # x_scale = random.uniform(0.9, 1.1)
+    # y_scale = random.uniform(0.9, 1.1)
+    # bg = cv2.resize(bg, (0, 0), fx=x_scale, fy=y_scale)
 
     # for dataset without tag
-    cv2.imwrite(f"{image_output_dir}/no_id/img_{i}.jpg", bg)
+    if random.random() > 0.5:
+        cv2.imwrite(f"{image_output_dir}/images/img_{y}.jpg", bg)
+        with open(f"{image_output_dir}/labels/img_{y}.txt", "w") as f:
+            f.write("")
+    else:
+        continue
     h_bg, w_bg, _ = bg.shape
 
     # Random resize
@@ -91,14 +98,38 @@ for i in range(1000):
     h_tag, w_tag, _ = tag_edited.shape
 
     # Random position
-    x_offset = random.randint(0, w_bg - w_tag)
-    y_offset = random.randint(0, h_bg - h_tag)
+    if "seg" in image_output_dir:
+        mask = np.load(f"{image_source}/{image_num}.npy")
+        mask[:h_tag, :] = 0
+        mask[-h_tag:, :] = 0
+        mask[:, :w_tag] = 0
+        mask[:, -w_tag:] = 0
+        kernel = np.ones((h_tag, w_tag), np.uint8)
+        safe_mask = cv2.erode(mask, kernel, iterations=1)
+        x_idx, y_idx = np.nonzero(safe_mask)
+        if len(x_idx) == 0:
+            print("zeros")
+            continue
+        idx = np.random.randint(0, len(x_idx))
+        x_offset = y_idx[idx]
+        y_offset = x_idx[idx]
+    else:
+        x_offset = random.randint(0, w_bg - w_tag)
+        y_offset = random.randint(0, h_bg - h_tag)
 
     # put into frame
     roi = bg[y_offset : y_offset + h_tag, x_offset : x_offset + w_tag]
-    alpha = tag_edited[:, :, 3] / 255.0 * random.uniform(0.3, 0.4)
+    alpha = tag_edited[:, :, 3] / 255.0 * random.uniform(0.5, 0.6)
     for c in range(3):
         roi[:, :, c] = alpha * tag_edited[:, :, c] + (1 - alpha) * roi[:, :, c]
     bg[y_offset : y_offset + h_tag, x_offset : x_offset + w_tag] = roi
 
-    cv2.imwrite(f"{image_output_dir}/id/img_{i}.jpg", bg)
+    cv2.imwrite(f"{image_output_dir}/images/img_{y}.jpg", bg)
+    with open(f"{image_output_dir}/labels/img_{y}.txt", "w") as f:
+        x1, y1 = x_offset, y_offset
+        x2, y2 = x_offset + w_tag, y_offset + h_tag
+        cx = (x1 + x2) / 2 / bg.shape[1]
+        cy = (y1 + y2) / 2 / bg.shape[0]
+        w = (x2 - x1) / bg.shape[1]
+        h = (y2 - y1) / bg.shape[0]
+        f.write(f"0 {cx} {cy} {w} {h}\n")
