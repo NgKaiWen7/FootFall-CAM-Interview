@@ -54,7 +54,7 @@ for folder in ["images", "labels"]:
     os.makedirs(os.path.join(image_output_dir, folder), exist_ok=True)
 
 
-for y in range(1200):
+for y in range(1000):
     image_num = np.random.randint(0, len(frames))
     # bg_path = random.choice(frames)
 

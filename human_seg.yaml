@@ -1,4 +1,0 @@
-train: human_seg_dataset_split/images/train
-val: human_seg_dataset_split/images/val
-nc: 1
-names: ["id"]
