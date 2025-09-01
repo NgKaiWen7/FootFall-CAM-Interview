@@ -107,18 +107,19 @@ while True:
                 cv2.imwrite(f"detected_frames/{detected_index} {conf}.jpg", model_view)
 
                 # for another model to detect staff based on the image
-                cv2.imwrite(
-                    f"{staff_dataset_output}/images/{detected_index}.jpg",
-                    frame.copy(),
-                )
-                with open(
-                    f"{staff_dataset_output}/labels/{detected_index}.txt", "w"
-                ) as f:
-                    x_center = (human_x1 + human_x2) / 2 / w
-                    y_center = (human_y1 + human_y2) / 2 / h
-                    width = (human_x2 - human_x1) / w
-                    height = (human_y2 - human_y1) / h
-                    f.write(f"0 {x_center} {y_center} {width} {height}")
+                if conf > 0.5:
+                    cv2.imwrite(
+                        f"{staff_dataset_output}/images/{detected_index}.jpg",
+                        frame.copy(),
+                    )
+                    with open(
+                        f"{staff_dataset_output}/labels/{detected_index}.txt", "w"
+                    ) as f:
+                        x_center = (human_x1 + human_x2) / 2 / w
+                        y_center = (human_y1 + human_y2) / 2 / h
+                        width = (human_x2 - human_x1) / w
+                        height = (human_y2 - human_y1) / h
+                        f.write(f"0 {x_center} {y_center} {width} {height}")
                 detected_index += 1
 
 cap.release()
