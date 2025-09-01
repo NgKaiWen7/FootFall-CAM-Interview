@@ -33,13 +33,6 @@ def rotate(fg, angle):
 # load PNG tag with alpha channel
 tag = cv2.imread("edited_staff_id.png", cv2.IMREAD_UNCHANGED)
 
-## Commented out, this is for cropping out transparent edges
-# alpha = tag[:, :, 3]
-# ys, xs = np.where(alpha > 0)
-# x_min, x_max = xs.min(), xs.max()
-# y_min, y_max = ys.min(), ys.max()
-# tag = tag[y_min : y_max + 1, x_min : x_max + 1, :]
-
 if len(sys.argv) == 2:
     image_source = sys.argv[1]
 else:
@@ -61,11 +54,6 @@ for y in range(1000):
     bg_path = frames[image_num]
     bg = cv2.imread(bg_path)
     bg = cv2.imread(f"{image_source}/{image_num}.jpg")
-
-    # Random resize on bg
-    # x_scale = random.uniform(0.9, 1.1)
-    # y_scale = random.uniform(0.9, 1.1)
-    # bg = cv2.resize(bg, (0, 0), fx=x_scale, fy=y_scale)
 
     # for dataset without tag
     if random.random() > 0.5:
@@ -90,32 +78,24 @@ for y in range(1000):
     angle = random.uniform(-180, 180)
     tag_edited = rotate(tag_edited, angle)
 
-    # Random Blur (not implemented due to small id size)
-    # ksize = random.choice([1, 3])
-    # tag_edited = cv2.GaussianBlur(tag_edited, (ksize, ksize), 0)
-
     # get new tag shape to place on bg
     h_tag, w_tag, _ = tag_edited.shape
 
     # Random position
-    if "seg" in image_output_dir:
-        mask = np.load(f"{image_source}/{image_num}.npy")
-        mask[:h_tag, :] = 0
-        mask[-h_tag:, :] = 0
-        mask[:, :w_tag] = 0
-        mask[:, -w_tag:] = 0
-        kernel = np.ones((h_tag, w_tag), np.uint8)
-        safe_mask = cv2.erode(mask, kernel, iterations=1)
-        x_idx, y_idx = np.nonzero(safe_mask)
-        if len(x_idx) == 0:
-            print("zeros")
-            continue
-        idx = np.random.randint(0, len(x_idx))
-        x_offset = y_idx[idx]
-        y_offset = x_idx[idx]
-    else:
-        x_offset = random.randint(0, w_bg - w_tag)
-        y_offset = random.randint(0, h_bg - h_tag)
+    mask = np.load(f"{image_source}/{image_num}.npy")
+    mask[:h_tag, :] = 0
+    mask[-h_tag:, :] = 0
+    mask[:, :w_tag] = 0
+    mask[:, -w_tag:] = 0
+    kernel = np.ones((h_tag, w_tag), np.uint8)
+    safe_mask = cv2.erode(mask, kernel, iterations=1)
+    x_idx, y_idx = np.nonzero(safe_mask)
+    if len(x_idx) == 0:
+        print("zeros")
+        continue
+    idx = np.random.randint(0, len(x_idx))
+    x_offset = y_idx[idx]
+    y_offset = x_idx[idx]
 
     # put into frame
     roi = bg[y_offset : y_offset + h_tag, x_offset : x_offset + w_tag]
